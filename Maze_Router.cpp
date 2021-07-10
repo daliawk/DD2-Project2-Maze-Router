@@ -3,7 +3,7 @@
 #include<fstream>
 #include<sstream>
 #include<string>
-
+#include<queue>
 using namespace std;
 
 //Struct for pins
@@ -92,7 +92,7 @@ void input_data(vector<vector<cell>>& nets) {
 void initialize_arrays(ifstream& in) {
 	string size;
 	getline(in, size);
-	
+
 	stringstream size_ss(size);
 
 	//Extracting size
@@ -153,4 +153,34 @@ void record_net(string line, vector<cell>& net) {
 			cout << "The pin " << pin.net_name << " has invalid coordinates of (" << pin.layer << ", " << pin.x << ", " << pin.y << ")!\n";
 		}
 	}
+}
+void Fill(vector<cell>S, vector<cell>T) {
+	int** Copy_M1;
+	int** Copy_M2;
+	for (int j = 0; j < m; j++) {
+		memcpy(Copy_M1[j], M1[j], n * sizeof(int));
+		memcpy(Copy_M2[j], M2[j], n * sizeof(int));
+	}
+	
+	queue<cell>q;
+	bool found = false;
+	
+	for (int i = 0; i < S.size(); i++) {
+		q.push(S[i]);
+		if (S[i].layer == 1) {
+			Copy_M1[S[i].x][S[i].y]=0;
+		}
+		else 
+			Copy_M2[S[i].x][S[i].y] = 0;
+	}
+
+	while (!found) {
+		cell current_cell = q.front();
+		q.pop();
+		
+
+	}
+
+
+
 }
