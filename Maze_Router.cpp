@@ -21,11 +21,19 @@ void record_net(string line, vector<cell>& net);	//Records the pins of the nets
 int** M1;	//Layer 1 array
 int** M2;	//Layer 2 array
 int m, n;	//Array dimensions
+int MAX_INT = 1e10;	//Infinity
+int via_cost, wrong_dir;
 
 
 int main() {
 	vector<vector<cell>> nets;	//List of nets
 	input_data(nets);			//Reading the input file
+
+	cout << "Please enter the cost of using vias: ";
+	cin >> via_cost;
+
+	cout << "Please enter the cost of unpreferred routing direction: ";
+	cin >> wrong_dir;
 
 	//Testing
 	/*
@@ -154,6 +162,7 @@ void record_net(string line, vector<cell>& net) {
 		}
 	}
 }
+
 void Fill(vector<cell>S, vector<cell>T) {
 	int** Copy_M1;
 	int** Copy_M2;
@@ -161,26 +170,167 @@ void Fill(vector<cell>S, vector<cell>T) {
 		memcpy(Copy_M1[j], M1[j], n * sizeof(int));
 		memcpy(Copy_M2[j], M2[j], n * sizeof(int));
 	}
-	
+
+	for (int i = 0; i < m; i++) {
+		for (int j = 0; j < n; j++) {
+			if (M1[i][j] != -1) {
+				Copy_M1[i][j] = MAX_INT;
+				Copy_M2[i][j] = MAX_INT;
+			}
+		}
+	}
+
 	queue<cell>q;
 	bool found = false;
-	
+
 	for (int i = 0; i < S.size(); i++) {
 		q.push(S[i]);
 		if (S[i].layer == 1) {
-			Copy_M1[S[i].x][S[i].y]=0;
+			Copy_M1[S[i].x][S[i].y] = 0;
 		}
-		else 
+		else
 			Copy_M2[S[i].x][S[i].y] = 0;
 	}
 
+
+	cell target;
 	while (!found) {
 		cell current_cell = q.front();
 		q.pop();
-		
+
+		//Checking if we reached one of the targets
+		for (int i = 0; i < T.size(); i++) {
+			if (T[i].x == current_cell.x && T[i].y == current_cell.y && T[i].layer == current_cell.layer) {
+				target = T[i];
+				found = true;
+				break;
+			}
+		}
+
+		//Layer 1: Horizontal
+		if (current_cell.layer == 1) {
+			//In case the cell on the top have not been given a value
+			if (current_cell.x > 0 && Copy_M1[current_cell.x - 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) { 
+				Copy_M1[current_cell.x - 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x - 1;
+				temp.y = current_cell.y;
+				temp.layer = 1;
+				q.push(temp);
+			}
+
+			//In case the cell on the bottom have not been given a value
+			if (current_cell.x < (m-1) && Copy_M1[current_cell.x + 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
+				Copy_M1[current_cell.x + 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x + 1;
+				temp.y = current_cell.y;
+				temp.layer = 1;
+				q.push(temp);
+			}
+
+			//In case the cell on the left have not been given a value
+			if (current_cell.y > 0 && Copy_M1[current_cell.x][current_cell.y - 1] > (Copy_M1[current_cell.x][current_cell.y] + 1)) {
+				Copy_M1[current_cell.x][current_cell.y - 1] = Copy_M1[current_cell.x][current_cell.y] + 1;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y - 1;
+				temp.layer = 1;
+				q.push(temp);
+			}
+
+			//In case the cell on the right have not been given a value
+			if (current_cell.y < (n-1) && Copy_M1[current_cell.x][current_cell.y + 1] > (Copy_M1[current_cell.x][current_cell.y] + 1)) {
+				Copy_M1[current_cell.x][current_cell.y + 1] = Copy_M1[current_cell.x][current_cell.y] + 1;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y + 1;
+				temp.layer = 1;
+				q.push(temp);
+			}
+
+			//In case the cell on the opposite layer has not been given a value
+			if (Copy_M2[current_cell.x][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + via_cost)) {
+				Copy_M2[current_cell.x][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + via_cost;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y;
+				temp.layer = 2;
+				q.push(temp);
+			}
+		}
+		else {	//Layer 2: Vertical
+			//In case the cell on the top have not been given a value
+			if (current_cell.x > 0 && Copy_M2[current_cell.x - 1][current_cell.y] > (Copy_M2[current_cell.x][current_cell.y] + 1)) {
+				Copy_M2[current_cell.x - 1][current_cell.y] = Copy_M2[current_cell.x][current_cell.y] + 1;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x - 1;
+				temp.y = current_cell.y;
+				temp.layer = 2;
+				q.push(temp);
+			}
+
+			//In case the cell on the bottom have not been given a value
+			if (current_cell.x < (m - 1) && Copy_M2[current_cell.x + 1][current_cell.y] >(Copy_M2[current_cell.x][current_cell.y] + 1)) {
+				Copy_M2[current_cell.x + 1][current_cell.y] = Copy_M2[current_cell.x][current_cell.y] + 1;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x + 1;
+				temp.y = current_cell.y;
+				temp.layer = 2;
+				q.push(temp);
+			}
+
+			//In case the cell on the left have not been given a value
+			if (current_cell.y > 0 && Copy_M2[current_cell.x][current_cell.y - 1] > (Copy_M2[current_cell.x][current_cell.y] + wrong_dir)) {
+				Copy_M2[current_cell.x][current_cell.y - 1] = Copy_M2[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y - 1;
+				temp.layer = 2;
+				q.push(temp);
+			}
+
+			//In case the cell on the right have not been given a value
+			if (current_cell.y < (n - 1) && Copy_M2[current_cell.x][current_cell.y + 1] >(Copy_M2[current_cell.x][current_cell.y] + wrong_dir)) {
+				Copy_M2[current_cell.x][current_cell.y + 1] = Copy_M2[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y + 1;
+				temp.layer = 2;
+				q.push(temp);
+			}
+
+			//In case the cell on the opposite layer has not been given a value
+			if (Copy_M1[current_cell.x][current_cell.y] > (Copy_M2[current_cell.x][current_cell.y] + via_cost)) {
+				Copy_M1[current_cell.x][current_cell.y] = Copy_M2[current_cell.x][current_cell.y] + via_cost;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y;
+				temp.layer = 1;
+				q.push(temp);
+			}
+		}
 
 	}
-
-
 
 }
