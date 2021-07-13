@@ -16,12 +16,12 @@ struct cell {
 void input_data(vector<vector<cell>>& nets);		//Reads the input file
 void initialize_arrays(ifstream& in);				//Sets the layers arrays
 void record_net(string line, vector<cell>& net);	//Records the pins of the nets
-
+void Fill(vector<cell>S, vector<cell>T);            //Fill the array 
 //Global variables
 int** M1;	//Layer 1 array
 int** M2;	//Layer 2 array
 int m, n;	//Array dimensions
-int MAX_INT = 1e10;	//Infinity
+int MAX_INT = 1e9;	//Infinity
 int via_cost, wrong_dir;
 
 
@@ -45,6 +45,12 @@ int main() {
 		cout << endl;
 	}
 	*/
+	cout << m << " " << n<<endl;
+	vector<cell> S;  vector<cell> T;
+	S = { { 3,4,1,"net1"} };
+	T= { { 1,4,2,"net2"} };
+
+	Fill(S,T);
 }
 
 void input_data(vector<vector<cell>>& nets) {
@@ -119,6 +125,14 @@ void initialize_arrays(ifstream& in) {
 			*(M1 + i) = new int[n];
 			*(M2 + i) = new int[n];
 		}
+		for (int i = 0; i < m; i++) {
+			for (int j = 0; j < n; j++) {
+				if (M1[i][j] != -1) {
+					M1[i][j] = MAX_INT;
+					M2[i][j] = MAX_INT;
+				}
+			}
+		}
 	}
 	else {
 		cout << "The maximum size for the grid is 1000x1000!";
@@ -166,19 +180,21 @@ void record_net(string line, vector<cell>& net) {
 void Fill(vector<cell>S, vector<cell>T) {
 	int** Copy_M1;
 	int** Copy_M2;
+
+	Copy_M1 = new int* [m];
+	Copy_M2 = new int* [m];
+
+	for (int i = 0; i < m; i++) {
+		*(Copy_M1 + i) = new int[n];
+		*(Copy_M2 + i) = new int[n];
+	}
+	
 	for (int j = 0; j < m; j++) {
 		memcpy(Copy_M1[j], M1[j], n * sizeof(int));
 		memcpy(Copy_M2[j], M2[j], n * sizeof(int));
 	}
 
-	for (int i = 0; i < m; i++) {
-		for (int j = 0; j < n; j++) {
-			if (M1[i][j] != -1) {
-				Copy_M1[i][j] = MAX_INT;
-				Copy_M2[i][j] = MAX_INT;
-			}
-		}
-	}
+
 
 	queue<cell>q;
 	bool found = false;
@@ -332,5 +348,21 @@ void Fill(vector<cell>S, vector<cell>T) {
 		}
 
 	}
-
+	for (int i = 0; i < m;i++)
+	{
+		for (int j = 0; j < n;j++)
+		{
+			std::cout << Copy_M1[i][j]<<" ";
+		}
+		   std::cout << std::endl;
+	}
+	cout << "-------------------------------------------------------------------------------------------------------" << endl;
+	for (int i = 0; i < m; i++)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			std::cout << Copy_M2[i][j] << " ";
+		}
+		std::cout << std::endl;
+	}
 }
