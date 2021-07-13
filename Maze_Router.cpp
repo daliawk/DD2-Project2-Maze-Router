@@ -210,7 +210,7 @@ void Fill(vector<cell>S, vector<cell>T) {
 		//Layer 1: Horizontal
 		if (current_cell.layer == 1) {
 			//In case the cell on the top have not been given a value
-			if (current_cell.x > 0 && Copy_M1[current_cell.x - 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) { 
+			if (current_cell.x > 0 && Copy_M1[current_cell.x - 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
 				Copy_M1[current_cell.x - 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
 
 				//Adding cell to queue
@@ -222,7 +222,7 @@ void Fill(vector<cell>S, vector<cell>T) {
 			}
 
 			//In case the cell on the bottom have not been given a value
-			if (current_cell.x < (m-1) && Copy_M1[current_cell.x + 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
+			if (current_cell.x < (m - 1) && Copy_M1[current_cell.x + 1][current_cell.y] >(Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
 				Copy_M1[current_cell.x + 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
 
 				//Adding cell to queue
@@ -246,7 +246,7 @@ void Fill(vector<cell>S, vector<cell>T) {
 			}
 
 			//In case the cell on the right have not been given a value
-			if (current_cell.y < (n-1) && Copy_M1[current_cell.x][current_cell.y + 1] > (Copy_M1[current_cell.x][current_cell.y] + 1)) {
+			if (current_cell.y < (n - 1) && Copy_M1[current_cell.x][current_cell.y + 1] >(Copy_M1[current_cell.x][current_cell.y] + 1)) {
 				Copy_M1[current_cell.x][current_cell.y + 1] = Copy_M1[current_cell.x][current_cell.y] + 1;	//Adding cost to new cell
 
 				//Adding cell to queue
