@@ -45,12 +45,15 @@ int main() {
 		cout << endl;
 	}
 	*/
-	cout << m << " " << n<<endl;
-	vector<cell> S;  vector<cell> T;
-	S = { { 3,4,1,"net1"} };
-	T= { { 1,4,2,"net2"} };
 
-	Fill(S,T);
+	//Testing Fill Function
+	/*
+	vector<cell> S;  vector<cell> T;
+	S = { { 3,5,1,"net1"} };
+	T = { { 1,4,2,"net2"} };
+
+	Fill(S, T);
+	*/
 }
 
 void input_data(vector<vector<cell>>& nets) {
@@ -188,7 +191,7 @@ void Fill(vector<cell>S, vector<cell>T) {
 		*(Copy_M1 + i) = new int[n];
 		*(Copy_M2 + i) = new int[n];
 	}
-	
+
 	for (int j = 0; j < m; j++) {
 		memcpy(Copy_M1[j], M1[j], n * sizeof(int));
 		memcpy(Copy_M2[j], M2[j], n * sizeof(int));
@@ -225,29 +228,7 @@ void Fill(vector<cell>S, vector<cell>T) {
 
 		//Layer 1: Horizontal
 		if (current_cell.layer == 1) {
-			//In case the cell on the top have not been given a value
-			if (current_cell.x > 0 && Copy_M1[current_cell.x - 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
-				Copy_M1[current_cell.x - 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
-
-				//Adding cell to queue
-				cell temp;
-				temp.x = current_cell.x - 1;
-				temp.y = current_cell.y;
-				temp.layer = 1;
-				q.push(temp);
-			}
-
-			//In case the cell on the bottom have not been given a value
-			if (current_cell.x < (m - 1) && Copy_M1[current_cell.x + 1][current_cell.y] >(Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
-				Copy_M1[current_cell.x + 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
-
-				//Adding cell to queue
-				cell temp;
-				temp.x = current_cell.x + 1;
-				temp.y = current_cell.y;
-				temp.layer = 1;
-				q.push(temp);
-			}
+			
 
 			//In case the cell on the left have not been given a value
 			if (current_cell.y > 0 && Copy_M1[current_cell.x][current_cell.y - 1] > (Copy_M1[current_cell.x][current_cell.y] + 1)) {
@@ -284,6 +265,30 @@ void Fill(vector<cell>S, vector<cell>T) {
 				temp.layer = 2;
 				q.push(temp);
 			}
+
+			//In case the cell on the top have not been given a value
+			if (current_cell.x > 0 && Copy_M1[current_cell.x - 1][current_cell.y] > (Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
+				Copy_M1[current_cell.x - 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x - 1;
+				temp.y = current_cell.y;
+				temp.layer = 1;
+				q.push(temp);
+			}
+
+			//In case the cell on the bottom have not been given a value
+			if (current_cell.x < (m - 1) && Copy_M1[current_cell.x + 1][current_cell.y] >(Copy_M1[current_cell.x][current_cell.y] + wrong_dir)) {
+				Copy_M1[current_cell.x + 1][current_cell.y] = Copy_M1[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x + 1;
+				temp.y = current_cell.y;
+				temp.layer = 1;
+				q.push(temp);
+			}
 		}
 		else {	//Layer 2: Vertical
 			//In case the cell on the top have not been given a value
@@ -310,6 +315,18 @@ void Fill(vector<cell>S, vector<cell>T) {
 				q.push(temp);
 			}
 
+			//In case the cell on the opposite layer has not been given a value
+			if (Copy_M1[current_cell.x][current_cell.y] > (Copy_M2[current_cell.x][current_cell.y] + via_cost)) {
+				Copy_M1[current_cell.x][current_cell.y] = Copy_M2[current_cell.x][current_cell.y] + via_cost;	//Adding cost to new cell
+
+				//Adding cell to queue
+				cell temp;
+				temp.x = current_cell.x;
+				temp.y = current_cell.y;
+				temp.layer = 1;
+				q.push(temp);
+			}
+
 			//In case the cell on the left have not been given a value
 			if (current_cell.y > 0 && Copy_M2[current_cell.x][current_cell.y - 1] > (Copy_M2[current_cell.x][current_cell.y] + wrong_dir)) {
 				Copy_M2[current_cell.x][current_cell.y - 1] = Copy_M2[current_cell.x][current_cell.y] + wrong_dir;	//Adding cost to new cell
@@ -333,36 +350,35 @@ void Fill(vector<cell>S, vector<cell>T) {
 				temp.layer = 2;
 				q.push(temp);
 			}
-
-			//In case the cell on the opposite layer has not been given a value
-			if (Copy_M1[current_cell.x][current_cell.y] > (Copy_M2[current_cell.x][current_cell.y] + via_cost)) {
-				Copy_M1[current_cell.x][current_cell.y] = Copy_M2[current_cell.x][current_cell.y] + via_cost;	//Adding cost to new cell
-
-				//Adding cell to queue
-				cell temp;
-				temp.x = current_cell.x;
-				temp.y = current_cell.y;
-				temp.layer = 1;
-				q.push(temp);
-			}
 		}
-
 	}
-	for (int i = 0; i < m;i++)
+	
+}
+
+void print_arrays(int** A, int** B) {
+	for (int i = 0; i < m; i++)
 	{
-		for (int j = 0; j < n;j++)
+		for (int j = 0; j < n; j++)
 		{
-			std::cout << Copy_M1[i][j]<<" ";
+			if (A[i][j] == MAX_INT) {
+				cout << " - ";
+			}
+			else
+				cout << A[i][j] << " ";
 		}
-		   std::cout << std::endl;
+		cout << endl;
 	}
 	cout << "-------------------------------------------------------------------------------------------------------" << endl;
 	for (int i = 0; i < m; i++)
 	{
 		for (int j = 0; j < n; j++)
 		{
-			std::cout << Copy_M2[i][j] << " ";
+			if (B[i][j] == MAX_INT) {
+				cout << " - ";
+			}
+			else
+				cout << B[i][j] << " ";
 		}
-		std::cout << std::endl;
+		cout << endl;
 	}
 }
