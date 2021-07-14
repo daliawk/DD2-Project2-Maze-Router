@@ -17,6 +17,8 @@ void input_data(vector<vector<cell>>& nets);		//Reads the input file
 void initialize_arrays(ifstream& in);				//Sets the layers arrays
 void record_net(string line, vector<cell>& net);	//Records the pins of the nets
 void Fill(vector<cell>S, vector<cell>T);            //Fill the array 
+void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell> &route); //back propagation function 
+void print_arrays(int** A, int** B); //printing the arrays 
 //Global variables
 int** M1;	//Layer 1 array
 int** M2;	//Layer 2 array
@@ -47,13 +49,14 @@ int main() {
 	*/
 
 	//Testing Fill Function
-	/*
+	
 	vector<cell> S;  vector<cell> T;
-	S = { { 3,5,1,"net1"} };
-	T = { { 1,4,2,"net2"} };
+	S = { { 5,5,1,"net1"} };
+	T = { { 9,9,2,"net2"} };
 
 	Fill(S, T);
-	*/
+
+	
 }
 
 void input_data(vector<vector<cell>>& nets) {
@@ -183,7 +186,7 @@ void record_net(string line, vector<cell>& net) {
 void Fill(vector<cell>S, vector<cell>T) {
 	int** Copy_M1;
 	int** Copy_M2;
-
+	vector<cell>route;
 	Copy_M1 = new int* [m];
 	Copy_M2 = new int* [m];
 
@@ -228,7 +231,7 @@ void Fill(vector<cell>S, vector<cell>T) {
 
 		//Layer 1: Horizontal
 		if (current_cell.layer == 1) {
-			
+
 
 			//In case the cell on the left have not been given a value
 			if (current_cell.y > 0 && Copy_M1[current_cell.x][current_cell.y - 1] > (Copy_M1[current_cell.x][current_cell.y] + 1)) {
@@ -352,7 +355,11 @@ void Fill(vector<cell>S, vector<cell>T) {
 			}
 		}
 	}
-	
+	print_arrays(Copy_M1, Copy_M2);
+	back_propagation(Copy_M1, Copy_M2, target,route);
+	for (auto i : route) {
+		cout << i.x << " " << i.y << " " << i.layer<<'\n';
+	}
 }
 
 void print_arrays(int** A, int** B) {
@@ -381,4 +388,66 @@ void print_arrays(int** A, int** B) {
 		}
 		cout << endl;
 	}
+}
+void back_propagation(int **Copy_M1,int ** Copy_M2,cell T, vector<cell> &route) {
+	int curr_val;
+	cell current_cell = T;
+	route.push_back(current_cell);
+	if (current_cell.layer == 1) {
+		curr_val = Copy_M1[current_cell.x][current_cell.y];
+	}
+	else {
+		curr_val = Copy_M2[current_cell.x][current_cell.y];
+	}
+	do {
+		if (current_cell.layer == 1) {
+			if (current_cell.y > 0 && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x][current_cell.y - 1] + 1)) {
+				current_cell.y--;
+				curr_val--;
+			}
+			else if (current_cell.y < (n - 1) && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x][current_cell.y + 1] + 1)) {
+				current_cell.y++;
+				curr_val--;
+			}
+			else if (Copy_M1[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y] + via_cost)) {
+				current_cell.layer = 1;
+				curr_val -= via_cost;
+			}
+			else if (current_cell.x < (m - 1) && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x + 1][current_cell.y] + wrong_dir)) {
+				current_cell.x++;
+				curr_val -= wrong_dir;
+			}
+			else if (current_cell.x > 0 && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x - 1][current_cell.y] + wrong_dir)) {
+				current_cell.x--;
+				curr_val -= wrong_dir;
+			}
+			else cout << "Error in back propagation";
+		}
+		else {
+			if (current_cell.x < (m - 1) && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x + 1][current_cell.y] + 1)) {
+			current_cell.x++;
+			curr_val -= 1;
+			}
+			else if (current_cell.x > 0 && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x - 1][current_cell.y] + 1)) {
+			current_cell.x--;
+			curr_val -= 1;
+			}
+			else if (Copy_M2[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x][current_cell.y] + via_cost)) {
+				current_cell.layer = 1;
+				curr_val -= via_cost;
+			}
+			
+			else if (current_cell.y > 0 && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y - 1] + wrong_dir)) {
+				current_cell.y--;
+				curr_val-=wrong_dir;
+			}
+			else if (current_cell.y < (n - 1) && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y + 1] + wrong_dir)) {
+				current_cell.y++;
+				curr_val-=wrong_dir;
+			}
+			else cout << "Error in back propagation";
+		}
+		route.push_back(current_cell);
+	} while (curr_val!=0);
+
 }
