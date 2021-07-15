@@ -89,17 +89,39 @@ for i in range(int(dimensions[0])):
         else:
             M1_c[i][j] = colors[M1[i][j]]
             M2_c[i][j] = colors[M2[i][j]]
+
 # Plotting the tables
 fig, ax = plt.subplots()
-ax.set_axis_off()
-table1 = plt.table(
-    cellText=text_cells1,
-    cellColours=M1_c,
-    loc='upper left')
-table2 = plt.table(
-    cellText=text_cells2,
-    cellColours=M2_c,
-    loc='lower left')
-ax.set_title('M1 (The Upper Layer)   M2 (The lower Layer)',
+if int(dimensions[0]) >= 20:
+    fig.set_size_inches(int(dimensions[1]) + 50, int(dimensions[0]) + 100)
+    ax.set_axis_off()
+    table1 = plt.table(
+        cellText=text_cells1,
+        cellColours=M1_c,
+        loc='upper left')
+    ax.set_title('M1', fontweight="bold")
+
+    fig2, ax2 = plt.subplots()
+    fig2.set_size_inches(int(dimensions[1]) + 50, int(dimensions[0]) + 100)
+    ax2.set_axis_off()
+    table2 = plt.table(
+        cellText=text_cells2,
+        cellColours=M2_c,
+        loc='upper left')
+    ax2.set_title('M2', fontweight="bold")
+else:
+    fig.set_size_inches(int(dimensions[1]) + 50, int(dimensions[0]) * 2 + 50)
+    ax.set_axis_off()
+    table1 = plt.table(
+        cellText=text_cells1,
+        cellColours=M1_c,
+        loc='upper left')
+    ax.set_title('M1 (The Upper Layer)   M2 (The lower Layer)',
              fontweight="bold")
+    table2 = plt.table(
+        cellText=text_cells2,
+        cellColours=M2_c,
+        loc='lower left')
+table2.scale(1,10)
+table1.scale(1,10)
 plt.show()
