@@ -13,16 +13,16 @@ struct cell {
 };
 
 //Functions
-void input_data(vector<vector<cell>>& nets);		//Reads the input file
+void input_data(vector<vector<cell>>& nets);        //Reads the input file
 void initialize_arrays(ifstream& in);				//Sets the layers arrays
 void record_net(string line, vector<cell>& net);	//Records the pins of the nets
 void route_net(vector<cell> pins, vector<cell>& routed_net, vector<cell> avoid_pins);	//Creating a net
 void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoid_pins);            //Fill the array 
 void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route); //back propagation function 
-void print_arrays(int** A, int** B); //printing the arrays 
-void output_nets(vector<vector<cell>> routed_nets);
-void heuristic_ordering(vector<vector<cell>>& nets);
-bool compare_net_scores(pair<int, vector<cell>> L1, pair<int, vector<cell>> L2);
+void print_arrays(int** A, int** B);    //printing the arrays 
+void output_nets(vector<vector<cell>> routed_nets);   //Print the final routed nets 
+void heuristic_ordering(vector<vector<cell>>& nets);  //function to re-order the nets to minimize wire lengths
+bool compare_net_scores(pair<int, vector<cell>> L1, pair<int, vector<cell>> L2); //bbolean function to help in reordering the nets 
 
 //Global variables
 int** M1;	//Layer 1 array
@@ -36,9 +36,7 @@ int main() {
 	vector<vector<cell>> nets;	//List of nets
 	input_data(nets);			//Reading the input file
 
-	for (int i = 0; i < nets[0].size(); i++) {
-		cout << nets[0][i].x << " " << nets[0][i].y << " " << nets[0][i].layer << "\n";
-	}
+
 
 	cout << "Please enter the cost of using vias: ";
 	cin >> via_cost;
@@ -58,15 +56,21 @@ int main() {
 		route_net(nets[i], routed_nets[net_idx], avoid_pins);
 
 		//Testing routing
-		for (int i = 0; i < routed_nets[net_idx].size(); i++) {
+		/*for (int i = 0; i < routed_nets[net_idx].size(); i++) {
 			cout << routed_nets[net_idx][i].x << " " << routed_nets[net_idx][i].y << " " << routed_nets[net_idx][i].layer << "\n";
-		}
+		}*/
 		cout << endl;
 		net_idx++;
 	}
 
 	output_nets(routed_nets);
-
+	for (int i = 0; i < routed_nets.size(); i++) {
+		cout << routed_nets[i][0].net_name;
+		for (int j = 0; j < routed_nets[i].size(); j++) {
+			cout << "(" << routed_nets[i][j].layer << "," << routed_nets[i][j].x << "," << routed_nets[i][j].y << ")";
+		}
+		cout << "\n";
+	}
 
 	return 0;
 }
@@ -211,17 +215,11 @@ void route_net(vector<cell> pins, vector<cell>& routed_net, vector<cell> avoid_p
 			break;
 		}
 		else {
-			//routed_net.insert(routed_net.end(), route.begin(), route.end() - 1);
 			for (int i = route.size() - 2; i >= 0; i--) {
 				routed_net.push_back(route[i]);
 			}
 		}
-		//for (int i = 0; i < routed_net.size(); i++) {
-		//	cout << routed_net[i].x << " " << routed_net[i].y << " " << routed_net[i].layer << "\n";
-		//}
 
-		//int x;
-		//cin >> x;
 	}
 
 	for (int i = 0; i < routed_net.size(); i++) {
@@ -283,7 +281,7 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoi
 				target = T[i];
 				T.erase(T.begin() + i);	//Removing the target as it will be routed
 				found = true;
-				cout << "Found target\n";
+				//cout << "Found target\n";
 				back_propagation(Copy_M1, Copy_M2, target, route);
 				break;
 			}
@@ -415,11 +413,7 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoi
 			}
 		}
 	}
-	//print_arrays(Copy_M1, Copy_M2);
 
-	//for (auto i : route) {
-	//	cout << i.x << " " << i.y << " " << i.layer << '\n';
-	//}
 }
 
 void print_arrays(int** A, int** B) {
@@ -449,9 +443,10 @@ void print_arrays(int** A, int** B) {
 		cout << endl;
 	}
 }
+
 void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route) {
-	print_arrays(Copy_M1, Copy_M2);
-	cout << T.x << " " << T.y << " " << T.layer << endl;
+	//print_arrays(Copy_M1, Copy_M2);
+	//cout << T.x << " " << T.y << " " << T.layer << endl;
 	int curr_val;
 	cell current_cell = T;
 	route.push_back(current_cell);
@@ -463,26 +458,32 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 	}
 	do {
 		if (current_cell.layer == 1) {
+			//In case the path is in layer one and wants to move to the left 
 			if (current_cell.y > 0 && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x][current_cell.y - 1] + 1)) {
 				current_cell.y--;
 				curr_val--;
 			}
+			//In case the path is in layer one and wants to move to the right 
 			else if (current_cell.y < (n - 1) && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x][current_cell.y + 1] + 1)) {
 				current_cell.y++;
 				curr_val--;
 			}
+			//In case the path is in layer one and wants to move to the other layer using via   
 			else if (Copy_M1[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y] + via_cost)) {
 				current_cell.layer = 2;
 				curr_val -= via_cost;
 			}
+			//In case the path is in layer one and wants to move vertically   
 			else if (current_cell.x < (m - 1) && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x + 1][current_cell.y] + wrong_dir)) {
 				current_cell.x++;
 				curr_val -= wrong_dir;
 			}
+			//In case the path is in layer one and wants to move vertically   
 			else if (current_cell.x > 0 && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x - 1][current_cell.y] + wrong_dir)) {
 				current_cell.x--;
 				curr_val -= wrong_dir;
 			}
+			//in case there is no path whether in the wrong direction, right direction nor using via 
 			else {
 				int trans_val = MAX_INT;
 				cell temp_cell = current_cell;
@@ -507,27 +508,32 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 			}
 		}
 		else {
+			//In case the path is in layer two and wants to move to the down  
 			if (current_cell.x < (m - 1) && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x + 1][current_cell.y] + 1)) {
 				current_cell.x++;
 				curr_val -= 1;
 			}
+			//In case the path is in layer two and wants to move to the up  
 			else if (current_cell.x > 0 && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x - 1][current_cell.y] + 1)) {
 				current_cell.x--;
 				curr_val -= 1;
 			}
+			//In case the path is in layer two and wants to move to the other layer through via 
 			else if (Copy_M2[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x][current_cell.y] + via_cost)) {
 				current_cell.layer = 1;
 				curr_val -= via_cost;
 			}
-
+			//In case the path is in layer two and wants to move to the left 
 			else if (current_cell.y > 0 && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y - 1] + wrong_dir)) {
 				current_cell.y--;
 				curr_val -= wrong_dir;
 			}
+			//In case the path is in layer two and wants to move to the right 
 			else if (current_cell.y < (n - 1) && Copy_M2[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y + 1] + wrong_dir)) {
 				current_cell.y++;
 				curr_val -= wrong_dir;
 			}
+			//in case there is no path whether in the wrong direction, right direction nor using via 
 			else {
 				cell temp_cell = current_cell;
 				int trans_val = MAX_INT;
@@ -551,20 +557,22 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 				current_cell = temp_cell;
 			}
 		}
+		//pushing the correct path from one pin to another in this vector 
 		route.push_back(current_cell);
-		cout << curr_val << endl;
+		//cout << curr_val << endl;
 	} while (curr_val != 0);
 
 }
 
 void output_nets(vector<vector<cell>> routed_nets) {
+	//file to save the final output 
 	ofstream out;
 	out.open("Routed Nets.txt");
 	if (out.fail()) {
 		cout << "Error creating output file!";
 		exit(1);
 	}
-
+	//printing the final nets in the output file 
 	for (int i = 0; i < routed_nets.size(); i++) {
 		out << routed_nets[i][0].net_name;
 		for (int j = 0; j < routed_nets[i].size(); j++) {
@@ -573,7 +581,6 @@ void output_nets(vector<vector<cell>> routed_nets) {
 		out << "\n";
 	}
 }
-
 
 void heuristic_ordering(vector<vector<cell>> &nets) {
 	vector<pair<int,vector<cell>>> score;
@@ -587,6 +594,7 @@ void heuristic_ordering(vector<vector<cell>> &nets) {
 		score[i].first = 0;
 		score[i].second = nets[i];
 		for (int j = 0; j < nets[i].size(); j++) {
+			//if statements to find the minimum,maximum x values and the minimum,maximum y values 
 			if (nets[i][j].x <= min_x)
 				min_x = nets[i][j].x;
 			if (nets[i][j].y <= min_y)
@@ -599,12 +607,12 @@ void heuristic_ordering(vector<vector<cell>> &nets) {
 		for (int k = 0; k < nets.size(); k++) {
 			if (i != k) {
 				for (int c = 0; c < nets[k].size(); c++) {
+					//giving a score to each net 
 					if (nets[k][c].x < max_x && nets[k][c].x > min_x && nets[k][c].y < max_y && nets[k][c].y > min_y) {
 						score[i].first++;
 					}
 			    }
-			}
-			
+			}	
 		}
 	}
 
@@ -612,8 +620,9 @@ void heuristic_ordering(vector<vector<cell>> &nets) {
 	for (int i = 0; i < nets.size(); i++) {
 		nets[i] = score[i].second;
 	}
-	for (int i = 0; i < nets.size(); i++)
-		cout << nets[i][0].net_name << endl;
+	//Testing the function 
+	/*for (int i = 0; i < nets.size(); i++)
+		cout << nets[i][0].net_name << endl;*/
 	
 }
 
