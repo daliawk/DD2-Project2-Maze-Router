@@ -21,6 +21,8 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoi
 void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route); //back propagation function 
 void print_arrays(int** A, int** B); //printing the arrays 
 void output_nets(vector<vector<cell>> routed_nets);
+void heuristic_ordering(vector<vector<cell>>& nets);
+bool compare_net_scores(pair<int, vector<cell>> L1, pair<int, vector<cell>> L2);
 
 //Global variables
 int** M1;	//Layer 1 array
@@ -34,7 +36,7 @@ int main() {
 	vector<vector<cell>> nets;	//List of nets
 	input_data(nets);			//Reading the input file
 
-	for (int i = 0; i <nets[0].size(); i++) {
+	for (int i = 0; i < nets[0].size(); i++) {
 		cout << nets[0][i].x << " " << nets[0][i].y << " " << nets[0][i].layer << "\n";
 	}
 
@@ -46,8 +48,9 @@ int main() {
 
 	vector<vector<cell>> routed_nets;
 	int net_idx = 0;
+	heuristic_ordering(nets);
 	for (int i = 0; i < nets.size(); i++) {
-		routed_nets.resize(net_idx + 1); 
+		routed_nets.resize(net_idx + 1);
 		vector<cell> avoid_pins;
 		for (int j = i + 1; j < nets.size(); j++) {
 			avoid_pins.insert(avoid_pins.end(), nets[j].begin(), nets[j].end());
@@ -61,8 +64,9 @@ int main() {
 		cout << endl;
 		net_idx++;
 	}
-	
+
 	output_nets(routed_nets);
+
 
 	return 0;
 }
@@ -233,7 +237,7 @@ void route_net(vector<cell> pins, vector<cell>& routed_net, vector<cell> avoid_p
 void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoid_pins) {
 	int** Copy_M1;
 	int** Copy_M2;
-	
+
 	Copy_M1 = new int* [m];
 	Copy_M2 = new int* [m];
 
@@ -412,7 +416,7 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoi
 		}
 	}
 	//print_arrays(Copy_M1, Copy_M2);
-	
+
 	//for (auto i : route) {
 	//	cout << i.x << " " << i.y << " " << i.layer << '\n';
 	//}
@@ -568,4 +572,51 @@ void output_nets(vector<vector<cell>> routed_nets) {
 		}
 		out << "\n";
 	}
+}
+
+
+void heuristic_ordering(vector<vector<cell>> &nets) {
+	vector<pair<int,vector<cell>>> score;
+	score.resize(nets.size());
+
+	for (int i = 0; i < nets.size(); i++) {
+		int min_x = MAX_INT;
+		int min_y = MAX_INT;
+		int max_x = -1;
+		int max_y = -1;
+		score[i].first = 0;
+		score[i].second = nets[i];
+		for (int j = 0; j < nets[i].size(); j++) {
+			if (nets[i][j].x <= min_x)
+				min_x = nets[i][j].x;
+			if (nets[i][j].y <= min_y)
+				min_y = nets[i][j].y;
+			if (nets[i][j].x >= max_x)
+				max_x = nets[i][j].x;
+			if (nets[i][j].y >= max_y)
+				max_y = nets[i][j].y;
+		}
+		for (int k = 0; k < nets.size(); k++) {
+			if (i != k) {
+				for (int c = 0; c < nets[k].size(); c++) {
+					if (nets[k][c].x < max_x && nets[k][c].x > min_x && nets[k][c].y < max_y && nets[k][c].y > min_y) {
+						score[i].first++;
+					}
+			    }
+			}
+			
+		}
+	}
+
+	sort(score.begin(), score.end(), compare_net_scores);
+	for (int i = 0; i < nets.size(); i++) {
+		nets[i] = score[i].second;
+	}
+	for (int i = 0; i < nets.size(); i++)
+		cout << nets[i][0].net_name << endl;
+	
+}
+
+bool compare_net_scores(pair<int, vector<cell>> L1, pair<int, vector<cell>> L2) {
+	return (L1.first < L2.first);
 }
