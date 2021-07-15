@@ -36,8 +36,6 @@ int main() {
 	vector<vector<cell>> nets;	//List of nets
 	input_data(nets);			//Reading the input file
 
-
-
 	cout << "Please enter the cost of using vias: ";
 	cin >> via_cost;
 
@@ -55,22 +53,11 @@ int main() {
 		}
 		route_net(nets[i], routed_nets[net_idx], avoid_pins);
 
-		//Testing routing
-		/*for (int i = 0; i < routed_nets[net_idx].size(); i++) {
-			cout << routed_nets[net_idx][i].x << " " << routed_nets[net_idx][i].y << " " << routed_nets[net_idx][i].layer << "\n";
-		}*/
 		cout << endl;
 		net_idx++;
 	}
 
 	output_nets(routed_nets);
-	for (int i = 0; i < routed_nets.size(); i++) {
-		cout << routed_nets[i][0].net_name;
-		for (int j = 0; j < routed_nets[i].size(); j++) {
-			cout << "(" << routed_nets[i][j].layer << "," << routed_nets[i][j].x << "," << routed_nets[i][j].y << ")";
-		}
-		cout << "\n";
-	}
 
 	return 0;
 }
@@ -85,16 +72,13 @@ void input_data(vector<vector<cell>>& nets) {
 
 	initialize_arrays(in);	//Initializing the array
 
-	//Testing
-	//cout << m << " " << n << endl;
-
 	string line;
 	while (!in.eof()) {	//Reading each line in the input file
 		getline(in, line);
 
 		if (line.substr(0, 3) == "OBS") {	//If the file refers to an obstacle
 			//Extracting its coordinates
-			line.erase(0, 5);
+			line.erase(0, 4);
 			stringstream coordinates(line);
 			string x_coordinates, y_coordinates;
 			getline(coordinates, x_coordinates, ',');
@@ -102,9 +86,6 @@ void input_data(vector<vector<cell>>& nets) {
 
 			int x = stoi(x_coordinates);
 			int y = stoi(y_coordinates);
-
-			//Testing
-			//cout << x << " " << y << endl;
 
 			//Adding the obstacles in the array in case they are in range
 			if (0 <= x && x < m && 0 <= y && y < n) {
@@ -195,6 +176,7 @@ void record_net(string line, vector<cell>& net) {
 		}
 		else {
 			cout << "The pin " << pin.net_name << " has invalid coordinates of (" << pin.layer << ", " << pin.x << ", " << pin.y << ")!\n";
+			exit(1);
 		}
 	}
 }
@@ -281,7 +263,6 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoi
 				target = T[i];
 				T.erase(T.begin() + i);	//Removing the target as it will be routed
 				found = true;
-				//cout << "Found target\n";
 				back_propagation(Copy_M1, Copy_M2, target, route);
 				break;
 			}
@@ -445,8 +426,6 @@ void print_arrays(int** A, int** B) {
 }
 
 void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route) {
-	//print_arrays(Copy_M1, Copy_M2);
-	//cout << T.x << " " << T.y << " " << T.layer << endl;
 	int curr_val;
 	cell current_cell = T;
 	route.push_back(current_cell);
@@ -559,7 +538,6 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 		}
 		//pushing the correct path from one pin to another in this vector 
 		route.push_back(current_cell);
-		//cout << curr_val << endl;
 	} while (curr_val != 0);
 
 }
@@ -582,8 +560,8 @@ void output_nets(vector<vector<cell>> routed_nets) {
 	}
 }
 
-void heuristic_ordering(vector<vector<cell>> &nets) {
-	vector<pair<int,vector<cell>>> score;
+void heuristic_ordering(vector<vector<cell>>& nets) {
+	vector<pair<int, vector<cell>>> score;
 	score.resize(nets.size());
 
 	for (int i = 0; i < nets.size(); i++) {
@@ -611,8 +589,8 @@ void heuristic_ordering(vector<vector<cell>> &nets) {
 					if (nets[k][c].x < max_x && nets[k][c].x > min_x && nets[k][c].y < max_y && nets[k][c].y > min_y) {
 						score[i].first++;
 					}
-			    }
-			}	
+				}
+			}
 		}
 	}
 
@@ -620,10 +598,6 @@ void heuristic_ordering(vector<vector<cell>> &nets) {
 	for (int i = 0; i < nets.size(); i++) {
 		nets[i] = score[i].second;
 	}
-	//Testing the function 
-	/*for (int i = 0; i < nets.size(); i++)
-		cout << nets[i][0].net_name << endl;*/
-	
 }
 
 bool compare_net_scores(pair<int, vector<cell>> L1, pair<int, vector<cell>> L2) {
