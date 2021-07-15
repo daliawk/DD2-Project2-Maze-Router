@@ -16,10 +16,12 @@ struct cell {
 void input_data(vector<vector<cell>>& nets);		//Reads the input file
 void initialize_arrays(ifstream& in);				//Sets the layers arrays
 void record_net(string line, vector<cell>& net);	//Records the pins of the nets
-void route_net(vector<cell> pins, vector<cell>& routed_net);	//Creating a net
-void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route);            //Fill the array 
+void route_net(vector<cell> pins, vector<cell>& routed_net, vector<cell> avoid_pins);	//Creating a net
+void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoid_pins);            //Fill the array 
 void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route); //back propagation function 
 void print_arrays(int** A, int** B); //printing the arrays 
+void output_nets(vector<vector<cell>> routed_nets);
+
 //Global variables
 int** M1;	//Layer 1 array
 int** M2;	//Layer 2 array
@@ -45,8 +47,12 @@ int main() {
 	vector<vector<cell>> routed_nets;
 	int net_idx = 0;
 	for (int i = 0; i < nets.size(); i++) {
-		routed_nets.resize(net_idx + 1);
-		route_net(nets[i], routed_nets[net_idx]);
+		routed_nets.resize(net_idx + 1); 
+		vector<cell> avoid_pins;
+		for (int j = i + 1; j < nets.size(); j++) {
+			avoid_pins.insert(avoid_pins.end(), nets[j].begin(), nets[j].end());
+		}
+		route_net(nets[i], routed_nets[net_idx], avoid_pins);
 
 		//Testing routing
 		for (int i = 0; i < routed_nets[net_idx].size(); i++) {
@@ -56,29 +62,9 @@ int main() {
 		net_idx++;
 	}
 	
+	output_nets(routed_nets);
 
-	
-
-	//Testing
-	/*
-	for (int r = 0; r < nets.size(); r++) {
-		cout << nets[r][0].net_name << ": ";
-		for (int c = 0; c < nets[r].size(); c++) {
-			cout << "(" << nets[r][c].layer << ", " << nets[r][c].x << ", " << nets[r][c].y << ") ";
-		}
-		cout << endl;
-	}
-	*/
-
-	//Testing Fill Function
-	/*
-	vector<cell> S;  vector<cell> T;
-	S = { { 5,5,1,"net1"} };
-	T = { { 9,9,2,"net2"} };
-
-	Fill(S, T);
-	*/
-
+	return 0;
 }
 
 void input_data(vector<vector<cell>>& nets) {
@@ -205,7 +191,7 @@ void record_net(string line, vector<cell>& net) {
 	}
 }
 
-void route_net(vector<cell> pins, vector<cell>& routed_net) {
+void route_net(vector<cell> pins, vector<cell>& routed_net, vector<cell> avoid_pins) {
 	vector<cell> T;
 
 	for (int i = 1; i < pins.size(); i++) {
@@ -215,9 +201,17 @@ void route_net(vector<cell> pins, vector<cell>& routed_net) {
 	routed_net.push_back(pins[0]);
 	while (T.size() > 0) {
 		vector<cell> route;
-		Fill(routed_net, T, route);
-		routed_net.insert(routed_net.end(), route.begin(), route.end() - 1);
-
+		Fill(routed_net, T, route, avoid_pins);
+		if (route.empty()) {
+			cout << "Could not route " << T[0].net_name;
+			break;
+		}
+		else {
+			//routed_net.insert(routed_net.end(), route.begin(), route.end() - 1);
+			for (int i = route.size() - 2; i >= 0; i--) {
+				routed_net.push_back(route[i]);
+			}
+		}
 		//for (int i = 0; i < routed_net.size(); i++) {
 		//	cout << routed_net[i].x << " " << routed_net[i].y << " " << routed_net[i].layer << "\n";
 		//}
@@ -225,9 +219,18 @@ void route_net(vector<cell> pins, vector<cell>& routed_net) {
 		//int x;
 		//cin >> x;
 	}
+
+	for (int i = 0; i < routed_net.size(); i++) {
+		if (routed_net[i].layer == 1) {
+			M1[routed_net[i].x][routed_net[i].y] = -1;
+		}
+		else {
+			M2[routed_net[i].x][routed_net[i].y] = -1;
+		}
+	}
 }
 
-void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route) {
+void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route, vector<cell> avoid_pins) {
 	int** Copy_M1;
 	int** Copy_M2;
 	
@@ -244,8 +247,6 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route) {
 		memcpy(Copy_M2[j], M2[j], n * sizeof(int));
 	}
 
-
-
 	queue<cell>q;
 	bool found = false;
 
@@ -258,6 +259,14 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route) {
 			Copy_M2[S[i].x][S[i].y] = 0;
 	}
 
+	for (int i = 0; i < avoid_pins.size(); i++) {
+		if (avoid_pins[i].layer == 1) {
+			Copy_M1[avoid_pins[i].x][avoid_pins[i].y] = -1;
+		}
+		else {
+			Copy_M2[avoid_pins[i].x][avoid_pins[i].y] = -1;
+		}
+	}
 
 	cell target;
 	while (!found) {
@@ -270,6 +279,8 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route) {
 				target = T[i];
 				T.erase(T.begin() + i);	//Removing the target as it will be routed
 				found = true;
+				cout << "Found target\n";
+				back_propagation(Copy_M1, Copy_M2, target, route);
 				break;
 			}
 		}
@@ -401,7 +412,7 @@ void Fill(vector<cell>S, vector<cell>& T, vector<cell>& route) {
 		}
 	}
 	//print_arrays(Copy_M1, Copy_M2);
-	back_propagation(Copy_M1, Copy_M2, target, route);
+	
 	//for (auto i : route) {
 	//	cout << i.x << " " << i.y << " " << i.layer << '\n';
 	//}
@@ -435,6 +446,8 @@ void print_arrays(int** A, int** B) {
 	}
 }
 void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route) {
+	print_arrays(Copy_M1, Copy_M2);
+	cout << T.x << " " << T.y << " " << T.layer << endl;
 	int curr_val;
 	cell current_cell = T;
 	route.push_back(current_cell);
@@ -455,7 +468,7 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 				curr_val--;
 			}
 			else if (Copy_M1[current_cell.x][current_cell.y] == (Copy_M2[current_cell.x][current_cell.y] + via_cost)) {
-				current_cell.layer = 1;
+				current_cell.layer = 2;
 				curr_val -= via_cost;
 			}
 			else if (current_cell.x < (m - 1) && Copy_M1[current_cell.x][current_cell.y] == (Copy_M1[current_cell.x + 1][current_cell.y] + wrong_dir)) {
@@ -467,17 +480,21 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 				curr_val -= wrong_dir;
 			}
 			else {
-				int trans_val = Copy_M2[current_cell.x][current_cell.y] + via_cost;
+				int trans_val = MAX_INT;
 				cell temp_cell = current_cell;
-				temp_cell.layer = 2;
-				curr_val = Copy_M2[current_cell.x][current_cell.y];
-				if (current_cell.x > 0 && trans_val > Copy_M1[current_cell.x - 1][current_cell.y] + wrong_dir) {
+				if (Copy_M2[current_cell.x][current_cell.y] != -1) {
+					trans_val = Copy_M2[current_cell.x][current_cell.y] + via_cost;
+					temp_cell = current_cell;
+					temp_cell.layer = 2;
+					curr_val = Copy_M2[current_cell.x][current_cell.y];
+				}
+				if (current_cell.x > 0 && Copy_M1[current_cell.x - 1][current_cell.y] != -1 && trans_val > Copy_M1[current_cell.x - 1][current_cell.y] + wrong_dir) {
 					trans_val = Copy_M1[current_cell.x - 1][current_cell.y] + wrong_dir;
 					temp_cell.layer = 1;
 					temp_cell.x = current_cell.x - 1;
 					curr_val = Copy_M1[current_cell.x - 1][current_cell.y];
 				}
-				if (current_cell.x < (m - 1) && trans_val > Copy_M1[current_cell.x + 1][current_cell.y] + wrong_dir) {
+				if (current_cell.x < (m - 1) && Copy_M1[current_cell.x + 1][current_cell.y] != -1 && trans_val > Copy_M1[current_cell.x + 1][current_cell.y] + wrong_dir) {
 					temp_cell.layer = 1;
 					temp_cell.x = current_cell.x + 1;
 					curr_val = Copy_M1[current_cell.x + 1][current_cell.y];
@@ -508,17 +525,21 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 				curr_val -= wrong_dir;
 			}
 			else {
-				int trans_val = Copy_M1[current_cell.x][current_cell.y] + via_cost;
 				cell temp_cell = current_cell;
-				temp_cell.layer = 1;
-				curr_val = Copy_M1[current_cell.x][current_cell.y];
-				if (current_cell.y > 0 && trans_val > Copy_M2[current_cell.x][current_cell.y - 1] + wrong_dir) {
+				int trans_val = MAX_INT;
+				if (Copy_M1[current_cell.x][current_cell.y] != -1) {
+					trans_val = Copy_M1[current_cell.x][current_cell.y] + via_cost;
+					temp_cell = current_cell;
+					temp_cell.layer = 1;
+					curr_val = Copy_M1[current_cell.x][current_cell.y];
+				}
+				if (current_cell.y > 0 && Copy_M2[current_cell.x][current_cell.y - 1] != -1 && trans_val > Copy_M2[current_cell.x][current_cell.y - 1] + wrong_dir) {
 					trans_val = Copy_M2[current_cell.x][current_cell.y - 1] + wrong_dir;
 					temp_cell.layer = 2;
 					temp_cell.y = current_cell.y - 1;
 					curr_val = Copy_M2[current_cell.x][current_cell.y - 1];
 				}
-				if (current_cell.x < (m - 1) && trans_val > Copy_M2[current_cell.x][current_cell.y + 1] + wrong_dir) {
+				if (current_cell.x < (m - 1) && Copy_M2[current_cell.x][current_cell.y + 1] != -1 && trans_val > Copy_M2[current_cell.x][current_cell.y + 1] + wrong_dir) {
 					temp_cell.layer = 2;
 					temp_cell.y = current_cell.y + 1;
 					curr_val = Copy_M2[current_cell.x][current_cell.y + 1];
@@ -527,6 +548,24 @@ void back_propagation(int** Copy_M1, int** Copy_M2, cell T, vector<cell>& route)
 			}
 		}
 		route.push_back(current_cell);
+		cout << curr_val << endl;
 	} while (curr_val != 0);
 
+}
+
+void output_nets(vector<vector<cell>> routed_nets) {
+	ofstream out;
+	out.open("Routed Nets.txt");
+	if (out.fail()) {
+		cout << "Error creating output file!";
+		exit(1);
+	}
+
+	for (int i = 0; i < routed_nets.size(); i++) {
+		out << routed_nets[i][0].net_name;
+		for (int j = 0; j < routed_nets[i].size(); j++) {
+			out << "(" << routed_nets[i][j].layer << "," << routed_nets[i][j].x << "," << routed_nets[i][j].y << ")";
+		}
+		out << "\n";
+	}
 }
