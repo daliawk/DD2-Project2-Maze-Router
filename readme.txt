@@ -22,6 +22,7 @@ Assumptions:
 How to use:
 - Open DEF_file.txt and set the layer dimensions, nets' pins' and obstacles' coordinates.
 - Run Maze_Router.cpp to run Lee's Algorithm (Make sure that DEF_file.txt is in the same folder)
+- The program will ask for the penalty of using vias and moving in an unpreferred direction.
 - Run Visualize_Nets.py (Make sure that DEF_file.txt and the output file from the previous step are in the same folder)
   Notes:
   - Black cells are obstacles
